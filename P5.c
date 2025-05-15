@@ -2,7 +2,7 @@
 #include <unistd.h>
 
 int main() {
-    printf("Executando programa P1 (pid=%d)…\n", getpid());
+    printf("Executando programa P5 (pid=%d)…\n", getpid());
     while (1) {
         sleep(1); // Simula trabalho infinito
     }
