@@ -37,13 +37,11 @@ int main(int argc, char *argv[]) {
     printf("[Escalonador] Programa: %s, P=%d, I=%d, D=%d\n",
            programa, prioridade, inicio, duracao);
 
-    // Espera até o tempo de início se for real-time
     if (inicio >= 0) {
         printf("[Escalonador] Esperando até o tempo %d...\n", inicio);
         sleep(inicio);
     }
 
-    // Cria processo do programa
     pid_t pid = fork();
     if (pid == 0) {
         execl(programa, programa, NULL);
@@ -55,12 +53,11 @@ int main(int argc, char *argv[]) {
             kill(pid, SIGSTOP);
             printf("[Escalonador] Parando %s após %d segundos\n", programa, duracao);
         } else {
-            sleep(2); // tempo fixo para simular execução breve
+            sleep(2); 
             kill(pid, SIGSTOP);
             printf("[Escalonador] Parando %s após 2 segundos\n", programa);
         }
 
-        // Espera o processo filho terminar (pode ajustar conforme necessidade)
         waitpid(pid, NULL, 0);
     } else {
         perror("fork");
