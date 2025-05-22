@@ -1,62 +1,34 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
-#include <fcntl.h>
-
-#define BUF_SIZE 256
+#include <string.h>
 
 int main() {
     FILE *file = fopen("exec.txt", "r");
-    if (!file) {
-        perror("Erro ao abrir exec.txt");
-        return 1;
+    if (!file) 
+    {
+    perror("Erro ao abrir exec.txt");
+    exit(1);
     }
+    char linha[256];
 
-    int pipefd[2];
-    if (pipe(pipefd) == -1) {
-        perror("pipe");
-        return 1;
-    }
+    while (fgets(linha, sizeof(linha), file)) {
+        // Remove quebra de linha
+        linha[strcspn(linha, "\n")] = 0;
 
-    pid_t pid = fork();
+        printf("[Interpretador] Enviando comando: %s\n", linha);
 
-    if (pid == -1) {
-        perror("fork");
-        return 1;
-    }
-
-    if (pid == 0) {
-        // Filho: escalonador
-        close(pipefd[1]); // fecha escrita no filho
-        dup2(pipefd[0], STDIN_FILENO); // redireciona pipe para stdin
-        close(pipefd[0]);
-
-        // Executa escalonador (supondo escalonador está compilado como ./escalonador)
-        execl("./escalonador", "escalonador", NULL);
-        perror("execl");
-        exit(1);
-    } else {
-        // Pai: interpretador
-        close(pipefd[0]); // fecha leitura no pai
-
-        char line[BUF_SIZE];
-        while (fgets(line, BUF_SIZE, file)) {
-            // Envia linha para escalonador
-            write(pipefd[1], line, strlen(line));
-            // Envia newline para garantir leitura correta
-            write(pipefd[1], "\n", 1);
-
-            // Aguarda 1 segundo (simula 1 UT)
-            sleep(1);
+        // Cria processo filho para enviar comando ao escalonador
+        pid_t pid = fork();
+        if (pid == 0) {
+            execl("./escalonador", "escalonador", linha, NULL);
+            perror("Erro ao executar escalonador");
+            exit(1);
         }
 
-        close(pipefd[1]);
-        fclose(file);
-
-        // Espera filho terminar
-        wait(NULL);
+        sleep(1); // Espera 1 segundo entre cada comando
     }
 
-    return 0;
+fclose(file);
+return 0;
 }
