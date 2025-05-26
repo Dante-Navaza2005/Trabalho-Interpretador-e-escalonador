@@ -142,12 +142,17 @@ int main(void)
 
             if (strncmp(p, "Run", 3) == 0) {
                 p += 3;
-                while (*p == ' ') p++;
+                while (*p == ' ') 
+                {
+                    p++;
+                }
 
                 // Lê o nome do processo
                 int i = 0;
                 while (*p && *p != ' ') 
+                {
                     nome[i++] = *p++;
+                }
                 nome[i] = '\0';
 
                 while (*p == ' ') 
@@ -280,9 +285,13 @@ int main(void)
 
             // Mostra mensagem com tempo restante
             if (tempo_restante >= 0)
+            {
                 printf("\n\n[Tempo %d] Executando %s (restam %d UTs)\n", tempo_global, atual->nome, tempo_restante);
+            }
             else
+            {
                 printf("\n\n[Tempo %d] Executando %s\n", tempo_global, atual->nome);
+            }
 
             // Executa 1 UT
             kill(atual->pid, SIGCONT);
