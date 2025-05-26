@@ -21,7 +21,7 @@ int main(void) {
 
         execl("./interpretador", "interpretador", NULL); // Executa o programa interpretador
         perror("execl interpretador");                   // Só chega aqui se execl falhar
-        exit(EXIT_FAILURE);
+        exit(1);
     }
 
     pid_t pid_esc = fork();
@@ -39,8 +39,7 @@ int main(void) {
     close(pipefd[0]);
     close(pipefd[1]);
 
-    printf("[Main] Interpretador (PID %d) e Escalonador (PID %d) iniciados.\n",
-           pid_int, pid_esc);
+    printf("[Main] Interpretador (PID %d) e Escalonador (PID %d) iniciados.\n", pid_int, pid_esc);
     printf("[Main] Processo principal encerrado.\n");
     return 0;
 }

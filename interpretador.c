@@ -16,7 +16,7 @@ int main(void) {
     FILE *arquivo = fopen("exec.txt", "r");
     if (!arquivo) {
         perror("[Interpretador] Erro ao abrir exec.txt");
-        exit(EXIT_FAILURE);
+        exit(1);
     }
 
     char linha[256];
