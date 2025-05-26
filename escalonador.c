@@ -51,7 +51,7 @@ void exibir_filas(void) {
     printf("\n  ROUND_ROBIN:   ");
     for (int i = 0; i < num_processos; i++)
         if (processos[i].ativo && processos[i].tipo == ROUND_ROBIN) // pega os processos round robin
-            printf("%s \n\n", processos[i].nome);
+            printf("%s ", processos[i].nome);
 
     printf("\n");
 }
@@ -280,15 +280,14 @@ int main(void)
 
             // Mostra mensagem com tempo restante
             if (tempo_restante >= 0)
-                printf("[Tempo %d] Executando %s (restam %d UTs)\n", tempo_global, atual->nome, tempo_restante);
+                printf("\n\n[Tempo %d] Executando %s (restam %d UTs)\n", tempo_global, atual->nome, tempo_restante);
             else
-                printf("[Tempo %d] Executando %s\n", tempo_global, atual->nome);
+                printf("\n\n[Tempo %d] Executando %s\n", tempo_global, atual->nome);
 
             // Executa 1 UT
             kill(atual->pid, SIGCONT);
             sleep(UT);
             kill(atual->pid, SIGSTOP);
-            printf("[Tempo %d] %s preemptado\n", tempo_global, atual->nome);
             atual->tempo_executado++;
 
             // Finaliza PRIORIDADE após 3 UTs
