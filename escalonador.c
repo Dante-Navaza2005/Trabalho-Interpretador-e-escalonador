@@ -5,7 +5,6 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <signal.h>
-#include <errno.h>
 
 #define MAX_PROCESSOS 50
 #define UT 1
@@ -26,12 +25,13 @@ typedef struct {
 Processo processos[MAX_PROCESSOS];
 int num_processos = 0;
 int tempo_global = 0;
-int round_robin_ultimo = -1;
+int round_robin_ultimo = -1; // guarda o indice do ultimo round robin executado, -1 representa o indice 0
 
-void exibir_filas(void) {
+void exibir_filas(void) 
+{
     printf("[Tempo %d] Filas:\n", tempo_global);
     printf("  REAL_TIME:   ");
-    for (int i = 0; i < num_processos; i++)
+    for (int i = 0; i < num_processos; i++) // 3 loops separados inves de um porque senao cada linha iria aparecer repetida
     {
         if (processos[i].ativo && processos[i].tipo == REAL_TIME) // pega os processos real time ativos
         {
