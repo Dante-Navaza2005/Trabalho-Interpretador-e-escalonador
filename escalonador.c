@@ -83,20 +83,6 @@ int conflitoRT(int inicio, int duracao)
     return 0;
 }
 
-void encerra_tudo(int sig) 
-{
-    printf("\n[Escalonador] Encerrando por sinal SIGINT...\n");
-    for (int i = 0; i < num_processos; i++) 
-    {
-        if (processos[i].ativo) // finalizando os processos ativos
-        {
-            printf("[Escalonador] Finalizando %s (pid %d)\n", processos[i].nome, processos[i].pid);
-            kill(processos[i].pid, SIGKILL);
-            waitpid(processos[i].pid, NULL, 0);
-        }
-    }
-    exit(0);
-}
 
 int lerNumero(char **p) // transforma inteiro positivo de string para numero
 {
@@ -112,8 +98,6 @@ int lerNumero(char **p) // transforma inteiro positivo de string para numero
 
 int main(void) 
 {
-    // Define  (Ctrl+C)
-    signal(SIGINT, encerra_tudo);
 
     char linha[256];
     printf("[Escalonador] Iniciando...\n");
