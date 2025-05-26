@@ -29,7 +29,6 @@ int rr_ultimo = -1;
 
 void exibir_filas(void) {
     printf("[Tempo %d] Filas:\n", tempo_global);
-
     printf("  RT:   ");
     for (int i = 0; i < num_processos; i++)
         if (processos[i].ativo && processos[i].tipo == RT)
@@ -120,8 +119,7 @@ int main(void) {
             }
             kill(pid, SIGSTOP);
 
-            Processo p = { pid, "", tipo, prioridade,
-                           inicio, duracao, 0, 1 };
+            Processo p = { pid, "", tipo, prioridade, inicio, duracao, 0, 1 };
             strncpy(p.nome, nome, sizeof(p.nome) - 1);
             processos[num_processos++] = p;
 
@@ -148,12 +146,8 @@ int main(void) {
         if (!atual) {
             for (int i = 0; i < num_processos; i++) {
                 Processo *p = &processos[i];
-                if (!p->ativo || p->tipo != PRIO) 
-                {
-                    continue;
-                }
-                if (p->tempo_executado < 3 && p->prioridade < menor_prio) 
-                {
+                if (!p->ativo || p->tipo != PRIO) continue;
+                if (p->tempo_executado < 3 && p->prioridade < menor_prio) {
                     menor_prio = p->prioridade;
                     atual = p;
                 }
@@ -173,7 +167,7 @@ int main(void) {
             }
         }
 
-        // execução ou ociosidade
+        // Execução ou ociosidade
         if (atual) {
             int tempo_restante = -1;
             if (atual->tipo == PRIO)
@@ -197,15 +191,13 @@ int main(void) {
                 kill(atual->pid, SIGKILL);
                 printf("[Tempo %d] %s finalizado\n", tempo_global, atual->nome);
             }
-
-            exibir_filas();
-            tempo_global++;
         } else {
             printf("[Tempo %d] Nenhum processo para executar\n", tempo_global);
             sleep(UT);
-            exibir_filas();
-            // Não incrementa tempo_global em tempo ocioso
         }
+
+        exibir_filas();
+        tempo_global++;  // Agora sempre avança, mesmo se ocioso
     }
 
     // Encerramento natural
