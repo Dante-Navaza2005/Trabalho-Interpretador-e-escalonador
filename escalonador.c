@@ -8,25 +8,25 @@
 #include <errno.h>
 
 #define MAX_PROCESSOS 50
-#define UT 1             
+#define UT 1
 
 typedef enum { RR, PRIO, RT } Tipo;
+
 typedef struct {
     pid_t pid;
     char  nome[20];
     Tipo  tipo;
-    int   prioridade;       
-    int   inicio, duracao;  
+    int   prioridade;
+    int   inicio, duracao;
     int   tempo_executado;
     int   ativo;
 } Processo;
 
 Processo processos[MAX_PROCESSOS];
-int num_processos   = 0;
-int tempo_global    = 0;
-int rr_ultimo       = -1;  
+int num_processos = 0;
+int tempo_global = 0;
+int rr_ultimo = -1;
 
-// Exibe as filas de processos organizadas por tipo (RT, PRIO, RR)
 void exibir_filas(void) {
     printf("[Tempo %d] Filas:\n", tempo_global);
 
@@ -48,7 +48,6 @@ void exibir_filas(void) {
     printf("\n");
 }
 
-// Verifica se o novo processo RT entra em conflito com algum já existente
 int conflitoRT(int inicio, int duracao) {
     for (int i = 0; i < num_processos; i++) {
         if (processos[i].tipo != RT) continue;
@@ -56,7 +55,7 @@ int conflitoRT(int inicio, int duracao) {
         int f1 = i1 + processos[i].duracao;
         int i2 = inicio;
         int f2 = i2 + duracao;
-        if (i2 < f1 && i1 < f2) return 1; 
+        if (i2 < f1 && i1 < f2) return 1;
     }
     return 0;
 }
@@ -76,7 +75,6 @@ void encerra_tudo(int sig) {
 
 int main(void) {
     signal(SIGINT, encerra_tudo);
-
     char linha[256];
     printf("[Escalonador] Iniciando...\n");
 
@@ -90,6 +88,18 @@ int main(void) {
             Tipo tipo = RR;
             sscanf(linha, "Run %19s", nome);
 
+            // Verifica duplicidade
+            int duplicado = 0;
+            for (int i = 0; i < num_processos; i++) {
+                if (strcmp(processos[i].nome, nome) == 0 && processos[i].ativo) {
+                    printf("[Escalonador] Processo %s já existe. Ignorado.\n", nome);
+                    duplicado = 1;
+                    break;
+                }
+            }
+            if (duplicado) continue;
+
+            // Detecta tipo de processo
             if (strstr(linha, "P=")) {
                 sscanf(linha, "Run %*s P=%d", &prioridade);
                 tipo = PRIO;
@@ -116,7 +126,7 @@ int main(void) {
             processos[num_processos++] = p;
 
             printf("[Escalonador] %s carregado (PID %d)\n", nome, pid);
-        } else if (n == -1){
+        } else if (n == -1 && errno != EAGAIN) {
             perror("[Escalonador] Erro de leitura");
         }
 
@@ -124,7 +134,7 @@ int main(void) {
         int menor_prio = 100;
         int t_rel = tempo_global % 60;
 
-        // 1) REAL-TIME tem prioridade absoluta na janela de tempo
+        // 1) RT
         for (int i = 0; i < num_processos; i++) {
             Processo *p = &processos[i];
             if (!p->ativo || p->tipo != RT) continue;
@@ -134,19 +144,23 @@ int main(void) {
             }
         }
 
-        // 2) PRIORIDADE – até 3 UTs 
+        // 2) PRIO
         if (!atual) {
             for (int i = 0; i < num_processos; i++) {
                 Processo *p = &processos[i];
-                if (!p->ativo || p->tipo != PRIO) continue;
-                if (p->tempo_executado < 3 && p->prioridade < menor_prio) {
+                if (!p->ativo || p->tipo != PRIO) 
+                {
+                    continue;
+                }
+                if (p->tempo_executado < 3 && p->prioridade < menor_prio) 
+                {
                     menor_prio = p->prioridade;
                     atual = p;
                 }
             }
         }
 
-        // 3) ROUND-ROBIN
+        // 3) RR
         if (!atual) {
             for (int off = 1; off <= num_processos; off++) {
                 int idx = (rr_ultimo + off) % num_processos;
@@ -161,8 +175,18 @@ int main(void) {
 
         // execução ou ociosidade
         if (atual) {
+            int tempo_restante = -1;
+            if (atual->tipo == PRIO)
+                tempo_restante = 3 - atual->tempo_executado;
+            else if (atual->tipo == RT)
+                tempo_restante = (atual->inicio + atual->duracao) - t_rel;
+
+            if (tempo_restante >= 0)
+                printf("[Tempo %d] Executando %s (restam %d UTs)\n", tempo_global, atual->nome, tempo_restante);
+            else
+                printf("[Tempo %d] Executando %s\n", tempo_global, atual->nome);
+
             kill(atual->pid, SIGCONT);
-            printf("[Tempo %d] Executando %s\n", tempo_global, atual->nome);
             sleep(UT);
             kill(atual->pid, SIGSTOP);
             printf("[Tempo %d] %s preemptado\n", tempo_global, atual->nome);
@@ -173,21 +197,22 @@ int main(void) {
                 kill(atual->pid, SIGKILL);
                 printf("[Tempo %d] %s finalizado\n", tempo_global, atual->nome);
             }
+
+            exibir_filas();
+            tempo_global++;
         } else {
             printf("[Tempo %d] Nenhum processo para executar\n", tempo_global);
             sleep(UT);
+            exibir_filas();
+            // Não incrementa tempo_global em tempo ocioso
         }
-
-        exibir_filas();
-        tempo_global++;
     }
 
-    //encerramento natural
+    // Encerramento natural
     printf("[Escalonador] Tempo máximo atingido.\n");
     for (int i = 0; i < num_processos; i++) {
         if (processos[i].ativo) {
-            printf("[Escalonador] Finalizando %s (pid %d)\n",
-                   processos[i].nome, processos[i].pid);
+            printf("[Escalonador] Finalizando %s (pid %d)\n", processos[i].nome, processos[i].pid);
             kill(processos[i].pid, SIGKILL);
             waitpid(processos[i].pid, NULL, 0);
         }
