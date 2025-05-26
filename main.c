@@ -10,7 +10,7 @@ int main(void) {
     // Cria o pipe para comunicação entre interpretador e escalonador
     if (pipe(pipefd) == -1) {
         perror("pipe");
-        exit(EXIT_FAILURE);
+        exit(1);
     }
 
     pid_t pid_int = fork();
@@ -32,7 +32,7 @@ int main(void) {
 
         execl("./escalonador", "escalonador", NULL); // Executa o programa escalonador
         perror("execl escalonador");                 // Só chega aqui se execl falhar
-        exit(EXIT_FAILURE);
+        exit(1);
     }
 
     // Fecha os lados do pipe
