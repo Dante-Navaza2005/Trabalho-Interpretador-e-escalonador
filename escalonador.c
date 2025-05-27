@@ -27,13 +27,17 @@ int num_processos = 0;
 int tempo_global = 0;
 int round_robin_ultimo = -1; // guarda o indice do ultimo round robin executado, -1 representa o indice 0
 
-void exibir_filas(void) 
+void exibir_filas(Processo *atual) 
 {
     printf("[Tempo %d] Filas:\n", tempo_global);
+
     printf("  REAL_TIME:   ");
     for (int i = 0; i < num_processos; i++) // 3 loops separados inves de um porque senao cada linha iria aparecer repetida
     {
-        if (processos[i].ativo && processos[i].tipo == REAL_TIME) // pega os processos real time ativos
+        if (atual && processos[i].pid == atual->pid) { // se o processo for o atual, ele nao estara na fila de espera
+            continue;
+        }
+        if (processos[i].ativo && processos[i].tipo == REAL_TIME) // pega os processos real time
         {
             printf("%s ", processos[i].nome);
         }
@@ -42,19 +46,31 @@ void exibir_filas(void)
     printf("\n  PRIORIDADE: ");
     for (int i = 0; i < num_processos; i++)
     {
+        if (atual && processos[i].pid == atual->pid) {
+            continue;
+        }
         if (processos[i].ativo && processos[i].tipo == PRIORIDADE)
         {
-            printf("%s(P=%d) ", processos[i].nome, processos[i].prioridade); // pega os processos de prioridade
+            printf("%s(P=%d) ", processos[i].nome, processos[i].prioridade);
         }
     }
 
     printf("\n  ROUND_ROBIN:   ");
     for (int i = 0; i < num_processos; i++)
-        if (processos[i].ativo && processos[i].tipo == ROUND_ROBIN) // pega os processos round robin
+    {
+        if (atual && processos[i].pid == atual->pid) 
+        {
+            continue;
+        }
+        if (processos[i].ativo && processos[i].tipo == ROUND_ROBIN)
+        {
             printf("%s ", processos[i].nome);
+        }
+    }
 
     printf("\n");
 }
+
 
 int conflitoRT(int inicio, int duracao) 
 {
@@ -208,7 +224,7 @@ int main(void)
 
         // escolhendo o processo atual
         Processo *atual = NULL;
-        int menor_prio = 100; // menor prioridade 
+        int menor_prioridade = 100; // menor prioridade 
         int segundos = tempo_global % 60;
 
         // Prioridade para processos REAL_TIME dentro da janela de execução
@@ -218,7 +234,7 @@ int main(void)
             {
                 continue;
             }
-            if (segundos >= p->inicio && segundos < p->inicio + p->duracao) {
+            if (segundos >= p->inicio && segundos < p->inicio + p->duracao) { // a soma tem que ser maior porque o real time executa a cada 60 segundos
                 atual = p;
                 break;
             }
@@ -232,8 +248,8 @@ int main(void)
                 {
                     continue;
                 }
-                if (p->tempo_executado < 3 && p->prioridade < menor_prio) {
-                    menor_prio = p->prioridade;
+                if (p->tempo_executado < 3 && p->prioridade < menor_prioridade) {
+                    menor_prioridade = p->prioridade;
                     atual = p;
                 }
             }
@@ -241,9 +257,9 @@ int main(void)
 
         // ultimo, ROUND_ROBIN em ordem circular
         if (!atual) {
-            for (int off = 1; off <= num_processos; off++) 
+            for (int deslocamento = 1; deslocamento <= num_processos; deslocamento++) 
             {
-                int index = (round_robin_ultimo + off) % num_processos;
+                int index = (round_robin_ultimo + deslocamento) % num_processos; // se a soma for maior que num_processos, retorna ao inicio da lista
                 Processo *p = &processos[index];
                 if (p->ativo && p->tipo == ROUND_ROBIN) {
                     atual = p;
@@ -252,7 +268,6 @@ int main(void)
                 }
             }
         }
-
         // executando os processos
         if (atual) {
             int tempo_restante = -1;
@@ -297,7 +312,7 @@ int main(void)
             printf("[Tempo %d] Nenhum processo para executar\n", tempo_global);
             sleep(UT);
         }
-        exibir_filas();
+        exibir_filas(atual);
         tempo_global++;
     }
 
